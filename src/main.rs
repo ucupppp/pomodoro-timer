@@ -3,9 +3,10 @@ use crossterm::event::{self, Event, KeyCode, KeyEventKind};
 use ratatui::{
     layout::{Constraint, Direction, Layout}, style::{Color, Style, Stylize}, text::{Line, Span}, widgets::{Block, BorderType, Borders, Gauge, Paragraph}, DefaultTerminal, Frame
 };
-use std::time::{Duration, Instant};
+use std::{env, process::abort, time::{Duration, Instant}};
 use rodio::{Decoder, OutputStreamBuilder, Sink, self, source::Source, source::SineWave, OutputStream};
 use std::{fs::File, io::BufReader};
+
 
 struct AppState {
     start_time: Instant,
@@ -18,17 +19,29 @@ struct AppState {
 }
 
 fn main() -> Result<()> {
+    let args: Vec<String> =  env::args().collect();
+    if args.len() < 2 {
+        println!("Provide timer duration in second!");
+        abort() 
+    }
+
+    let dur: u64 = args[1].parse().unwrap();
+
     color_eyre::install()?;
     let terminal = ratatui::init();
-    let result = run(terminal);
+    let result = run(terminal, dur);
     ratatui::restore();
     result
 }
 
-fn run(mut terminal: DefaultTerminal) -> Result<()> {
+fn run(mut terminal: DefaultTerminal, mut dur :u64) -> Result<()> {
+    if dur == 0 {
+        dur = 10
+    }
+
     let mut app = AppState {
         start_time: Instant::now(),
-        duration: Duration::from_secs(10),
+        duration: Duration::from_secs(dur),
         paused: false,
         alarm_played: false,
         audio_stream: None,
